@@ -13,6 +13,7 @@ import {
     generateAccessAndRefreshToken,
 } from "../utils/token.js";
 import jwt from "jsonwebtoken";
+import { uploadOnCloudinary } from "../config/cloudinary.js";
 
 const registerUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
@@ -25,10 +26,14 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "user already exist");
     }
 
+    const avatarLocalPath = req.file?.path;
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+
     const user = await User.create({
         username,
         email,
         password,
+        avatar: avatar?.secure_url || "",
     });
 
     if (!user) {
