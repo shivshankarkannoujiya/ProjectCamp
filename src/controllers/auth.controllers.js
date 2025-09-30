@@ -312,6 +312,42 @@ const getCurrentUser = asyncHandler(async (req, _) => {
     );
 });
 
+const updateUserProfile = asyncHandler(async (req, res) => {
+    const { fullname } = req.body;
+
+    let avatarUrl;
+    const avatarLocalPath = req.file?.path;
+    if (avatarLocalPath) {
+        const avatar = await uploadOnCloudinary(avatarLocalPath);
+        avatarUrl = avatar?.secure_url ?? undefined;
+    }
+
+    const upatefields = {
+        ...(fullname && { fullname }),
+        ...(avatarUrl && { avatar: avatarUrl }),
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(
+        req.user?._id,
+        upatefields,
+        { new: true, runValidators: true },
+    ).select("-password -refreshToken");
+
+    if (!updatedUser) {
+        throw new ApiError(404, "user not found");
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { user: updatedUser },
+                "Profile updated successfully",
+            ),
+        );
+});
+
 export {
     registerUser,
     loginUser,
@@ -323,4 +359,5 @@ export {
     resetUserPassword,
     changeCurrectPassword,
     getCurrentUser,
+    updateUserProfile,
 };
