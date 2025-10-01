@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { ENV } from "../config/env.js";
+import { type } from "os";
 
 const userSchema = new mongoose.Schema(
     {
@@ -10,10 +11,13 @@ const userSchema = new mongoose.Schema(
             type: {
                 url: String,
                 localpath: String,
+                publicId: String
             },
+
             default: {
                 url: `https://placehold.co/600x400`,
                 localpath: "",
+                publicId: ""
             },
         },
 

@@ -14,6 +14,7 @@ import {
 } from "../utils/token.js";
 import jwt from "jsonwebtoken";
 import { uploadOnCloudinary } from "../config/cloudinary.js";
+import { v2 as cloudinary } from "cloudinary";
 
 const registerUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
@@ -33,7 +34,9 @@ const registerUser = asyncHandler(async (req, res) => {
         username,
         email,
         password,
-        avatar: avatar?.secure_url || "",
+        avatar: avatar
+            ? { url: avatar.secure_url, publicId: avatar.public_id }
+            : { url: "https://placehold.co/600x400", publicId: "" },
     });
 
     if (!user) {
@@ -315,21 +318,39 @@ const getCurrentUser = asyncHandler(async (req, _) => {
 const updateUserProfile = asyncHandler(async (req, res) => {
     const { fullname } = req.body;
 
-    let avatarUrl;
-    const avatarLocalPath = req.file?.path;
-    if (avatarLocalPath) {
-        const avatar = await uploadOnCloudinary(avatarLocalPath);
-        avatarUrl = avatar?.secure_url ?? undefined;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        throw new ApiError(404, "user not found");
     }
 
-    const upatefields = {
+    let avatarUrl;
+    let avatarPublicId;
+
+    const avatarLocalPath = req.file?.path;
+    if (avatarLocalPath) {
+        try {
+            const avatar = await uploadOnCloudinary(avatarLocalPath);
+            avatarUrl = avatar?.secure_url;
+            avatarPublicId: avatar?.public_id;
+
+            if (user.avatar?.publicId) {
+                await cloudinary.uploader.destroy(user.avatar.publicId);
+            }
+        } catch (error) {
+            throw new ApiError(500, "Avatar upload failed");
+        }
+    }
+
+    const updateFields = {
         ...(fullname && { fullname }),
-        ...(avatarUrl && { avatar: avatarUrl }),
+        ...(avatarUrl && {
+            avatar: { url: avatarUrl, publicId: avatarPublicId },
+        }),
     };
 
     const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
-        upatefields,
+        { $set: updateFields },
         { new: true, runValidators: true },
     ).select("-password -refreshToken");
 
