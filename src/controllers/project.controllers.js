@@ -113,11 +113,6 @@ const deleteProject = asyncHandler(async (req, res) => {
         );
 });
 
-const addMemberToProject = asyncHandler(async (req, res) => {});
-const getProjectMembers = asyncHandler(async (req, res) => {});
-const updateProjectMembers = asyncHandler(async (req, res) => {});
-const updateProjectMemberRole = asyncHandler(async (req, res) => {});
-const deleteMember = asyncHandler(async (req, res) => {});
 
 export {
     createProject,
@@ -125,9 +120,4 @@ export {
     getProjects,
     updateProject,
     deleteProject,
-    addMemberToProject,
-    getProjectMembers,
-    updateProjectMembers,
-    updateProjectMemberRole,
-    deleteMember,
 };
