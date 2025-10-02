@@ -2,6 +2,8 @@ import { Project } from "../models/project.models.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js";
+import mongoose from "mongoose";
+import { ProjectMember } from "../models/projectmember.models.js";
 
 const createProject = asyncHandler(async (req, res) => {
     const { name, description } = req.body;
@@ -93,26 +95,42 @@ const updateProject = asyncHandler(async (req, res) => {
 const deleteProject = asyncHandler(async (req, res) => {
     const { projectId } = req.params;
 
-    const deletedProject = await Project.findOneAndDelete({
-        _id: projectId,
-        createdBy: req.user?._id,
-    });
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!deletedProject) {
-        throw new ApiError(404, "project not found");
-    }
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                { project: deletedProject },
-                "project deleted successfully",
-            ),
+    try {
+        const deletedProject = await Project.findOneAndDelete(
+            {
+                _id: projectId,
+                createdBy: req.user?._id,
+            },
+            { session },
         );
-});
 
+        if (!deletedProject) {
+            throw new ApiError(404, "project not found");
+        }
+
+        await ProjectMember.deleteMany({ project: projectId }, { session });
+
+        await session.commitTransaction();
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    { project: deletedProject },
+                    "project deleted successfully",
+                ),
+            );
+    } catch (error) {
+        await session.abortTransaction();
+        throw new ApiError(500, {}, "Internal server error");
+    } finally {
+        session.endSession();
+    }
+});
 
 export {
     createProject,

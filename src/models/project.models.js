@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ProjectMember } from "./projectmember.models.js";
 
 const projectSchema = new mongoose.Schema(
     {
@@ -21,8 +22,17 @@ const projectSchema = new mongoose.Schema(
         },
     },
     {
-        timestamps: true
+        timestamps: true,
     },
 );
+
+projectSchema.pre("remove", async function (next) {
+    try {
+        await ProjectMember.deleteMany({ project: this._id });
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
 
 export const Project = mongoose.model("Project", projectSchema);
