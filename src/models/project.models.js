@@ -26,13 +26,5 @@ const projectSchema = new mongoose.Schema(
     },
 );
 
-projectSchema.pre("remove", async function (next) {
-    try {
-        await ProjectMember.deleteMany({ project: this._id });
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
 
 export const Project = mongoose.model("Project", projectSchema);
